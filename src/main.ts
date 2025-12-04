@@ -1,4 +1,4 @@
-import { Color, DisplayMode, Engine, FadeInOut } from "excalibur";
+import { Color, DisplayMode, Engine, FadeInOut, SolverStrategy, vec } from "excalibur";
 import { loader } from "./resources";
 import { MyLevel } from "./level";
 
@@ -12,11 +12,12 @@ const game = new Engine({
   scenes: {
     start: MyLevel
   },
-  // physics: {
-  //   solver: SolverStrategy.Realistic,
-  //   substep: 5 // Sub step the physics simulation for more robust simulations
-  // },
-  // fixedUpdateTimestep: 16 // Turn on fixed update timestep when consistent physic simulation is important
+  physics: {
+    solver: SolverStrategy.Arcade, // Best for platformers - prevents overlap
+    gravity: vec(0, 1200), // Strong downward pull for snappy jumps
+    substep: 3 // Prevents collision tunneling at high speeds
+  },
+  fixedUpdateTimestep: 16 // 60fps consistent physics simulation
 });
 
 game.start('start', { // name of the start scene 'start'

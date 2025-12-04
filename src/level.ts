@@ -1,11 +1,32 @@
-import { DefaultLoader, Engine, ExcaliburGraphicsContext, Scene, SceneActivationContext } from "excalibur";
+import { Axis, DefaultLoader, Engine, ExcaliburGraphicsContext, LockCameraToActorAxisStrategy, Scene, SceneActivationContext, vec } from "excalibur";
 import { Player } from "./player";
+import { TerrainManager } from "./terrain";
 
 export class MyLevel extends Scene {
+    private player!: Player;
+    private terrainManager!: TerrainManager;
+
     override onInitialize(engine: Engine): void {
-        // Scene.onInitialize is where we recommend you perform the composition for your game
-        const player = new Player();
-        this.add(player); // Actors need to be added to a scene to be drawn
+        // Create player
+        this.player = new Player();
+        this.add(this.player);
+
+        // Create terrain manager for procedural generation
+        this.terrainManager = new TerrainManager(this);
+
+        // Setup camera to follow player on X-axis only
+        const cameraStrategy = new LockCameraToActorAxisStrategy(this.player, Axis.X);
+        this.camera.strategy = cameraStrategy;
+
+        // Set initial camera position
+        this.camera.pos = vec(400, 300); // Center of 800x600 screen
+
+        // Setup input - tap anywhere to jump or trick
+        engine.input.pointers.primary.on('down', () => {
+            this.player.handleInput();
+        });
+
+        console.log('Game initialized! Tap/click anywhere to jump or perform tricks in the air.');
     }
 
     override onPreLoad(loader: DefaultLoader): void {
@@ -14,16 +35,15 @@ export class MyLevel extends Scene {
 
     override onActivate(context: SceneActivationContext<unknown>): void {
         // Called when Excalibur transitions to this scene
-        // Only 1 scene is active at a time
     }
 
     override onDeactivate(context: SceneActivationContext): void {
         // Called when Excalibur transitions away from this scene
-        // Only 1 scene is active at a time
     }
 
     override onPreUpdate(engine: Engine, elapsedMs: number): void {
-        // Called before anything updates in the scene
+        // Update terrain generation based on camera position
+        this.terrainManager.update(this.camera.pos.x);
     }
 
     override onPostUpdate(engine: Engine, elapsedMs: number): void {
