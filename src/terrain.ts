@@ -7,10 +7,10 @@ export class TerrainManager {
   private rightmostEdge: number = 0;
 
   // Generation parameters
-  private readonly MIN_BUILDING_WIDTH = 200;
-  private readonly MAX_BUILDING_WIDTH = 600;
-  private readonly MIN_GAP = 100;
-  private readonly MAX_GAP = 350; // Validated as jumpable based on physics
+  private readonly MIN_BUILDING_WIDTH = 250;
+  private readonly MAX_BUILDING_WIDTH = 1000;
+  private readonly MIN_GAP = 80;
+  private readonly MAX_GAP = 250; // Smaller gaps for easier gameplay
   private readonly SPAWN_DISTANCE = 1600; // 2 screen widths ahead
   private readonly DESPAWN_DISTANCE = -800; // 1 screen width behind
 
@@ -32,8 +32,8 @@ export class TerrainManager {
   }
 
   private spawnBuilding() {
-    // Random width for this building
-    const width = this.randomRange(this.MIN_BUILDING_WIDTH, this.MAX_BUILDING_WIDTH);
+    // Random width for this building - weighted toward longer platforms
+    const width = this.weightedRandomRange(this.MIN_BUILDING_WIDTH, this.MAX_BUILDING_WIDTH, 0.6);
 
     // Create building at rightmost edge
     const building = new Building(this.rightmostEdge, width);
@@ -48,6 +48,13 @@ export class TerrainManager {
 
   private randomRange(min: number, max: number): number {
     return Math.random() * (max - min) + min;
+  }
+
+  // Weighted random that favors larger values
+  // power < 1 skews toward max (larger values), power > 1 skews toward min
+  private weightedRandomRange(min: number, max: number, power: number): number {
+    const random = Math.pow(Math.random(), power);
+    return random * (max - min) + min;
   }
 
   update(cameraX: number) {

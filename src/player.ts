@@ -1,4 +1,4 @@
-import { Actor, Collider, CollisionContact, CollisionType, Color, Engine, GraphicsGroup, Rectangle, Side, vec } from "excalibur";
+import { Actor, Circle, Collider, CollisionContact, CollisionType, Color, EmitterType, Engine, GraphicsGroup, ParticleEmitter, Rectangle, Side, vec } from "excalibur";
 
 // Player state machine enum
 enum PlayerState {
@@ -20,6 +20,7 @@ export class Player extends Actor {
   private state: PlayerState = PlayerState.IN_AIR; // Start in air, will land on first building
   private airTrickCount: number = 0;
   private stateTimer: number = 0;
+  private isGameOver: boolean = false;
 
   // Graphics for different states
   private runningGraphic!: Rectangle;
@@ -28,6 +29,9 @@ export class Player extends Actor {
   private trick2Graphic!: Rectangle;
   private trick3Graphic!: Rectangle;
   private grindGraphic!: Rectangle;
+
+  // Particle emitter for landing effects
+  private landingEmitter!: ParticleEmitter;
 
   constructor() {
     super({
@@ -82,6 +86,29 @@ export class Player extends Actor {
 
     // Start with running graphic
     this.graphics.use(this.runningGraphic);
+
+    // Create particle emitter for landing effects
+    this.landingEmitter = new ParticleEmitter({
+      pos: vec(0, 30), // Position below player
+      emitterType: EmitterType.Circle,
+      radius: 5,
+      minVel: 50,
+      maxVel: 150,
+      minAngle: 0,
+      maxAngle: Math.PI,
+      isEmitting: false,
+      emitRate: 100,
+      particle: {
+        life: 500,
+        opacity: 0.8,
+        beginColor: Color.fromHex('#D2B48C'), // Tan/dust color
+        endColor: Color.fromHex('#D2B48C').darken(0.3),
+        startSize: 4,
+        endSize: 1,
+        acc: vec(0, 300) // Gravity on particles
+      }
+    });
+    this.addChild(this.landingEmitter);
   }
 
   // Handle input from tap/click
@@ -145,6 +172,17 @@ export class Player extends Actor {
     const delta = elapsedMs / 1000; // Convert to seconds
     this.stateTimer += delta;
 
+    // Check death zone (fell off screen)
+    if (this.pos.y > 700 && !this.isGameOver) {
+      this.handleGameOver(engine);
+      return;
+    }
+
+    // Don't update if game over
+    if (this.isGameOver) {
+      return;
+    }
+
     // Update based on current state
     switch (this.state) {
       case PlayerState.RUNNING:
@@ -163,6 +201,13 @@ export class Player extends Actor {
         this.updateLanding(delta);
         break;
     }
+  }
+
+  private handleGameOver(engine: Engine) {
+    this.isGameOver = true;
+    console.log('Game Over! Distance traveled:', Math.floor(this.pos.x));
+    // Emit custom event for scene to handle restart
+    engine.emit('gameover', { distance: Math.floor(this.pos.x) });
   }
 
   private updateRunning(delta: number) {
@@ -205,6 +250,9 @@ export class Player extends Actor {
 
     // Only process bottom collisions (landing)
     if (side === Side.Bottom) {
+      // Trigger landing particles
+      this.emitLandingParticles();
+
       // Check if rail
       if (otherActor.hasTag('rail')) {
         this.transitionTo(PlayerState.GRINDING);
@@ -226,6 +274,14 @@ export class Player extends Actor {
     if (side === Side.Left || side === Side.Right) {
       console.log('Hit wall! Game Over!');
     }
+  }
+
+  private emitLandingParticles() {
+    // Emit a burst of particles
+    this.landingEmitter.isEmitting = true;
+    setTimeout(() => {
+      this.landingEmitter.isEmitting = false;
+    }, 100); // Emit for 100ms
   }
 
   override onCollisionEnd(self: Collider, other: Collider, side: Side, lastContact: CollisionContact): void {
