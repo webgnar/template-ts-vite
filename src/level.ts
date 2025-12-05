@@ -8,6 +8,10 @@ export class MyLevel extends Scene {
     private distanceLabel!: Label;
     private gameOverLabel!: Label;
     private restartLabel!: Label;
+    private trickLabel!: Label;
+    private trickLabelTimer: number = 0;
+    private instructionsLabel!: Label;
+    private instructionsTimer: number = 5.0; // Show for 5 seconds
     private isGameOver: boolean = false;
 
     override onInitialize(engine: Engine): void {
@@ -32,20 +36,27 @@ export class MyLevel extends Scene {
 
         // Setup input - tap anywhere to jump or trick
         engine.input.pointers.primary.on('down', () => {
-            console.log('Click detected! isGameOver:', this.isGameOver);
             if (this.isGameOver) {
                 // Restart game
-                console.log('Attempting restart...');
                 this.restartGame(engine);
             } else {
+                // Hide instructions on first tap
+                if (this.instructionsLabel.graphics.visible) {
+                    this.instructionsLabel.graphics.visible = false;
+                    this.instructionsTimer = 0;
+                }
                 this.player.handleInput();
             }
         });
 
         // Listen for gameover event to show game over screen (once per scene instance)
         engine.once('gameover', (evt: any) => {
-            console.log('Gameover event received!');
             this.showGameOver(evt.distance);
+        });
+
+        // Listen for trick events to show trick names
+        engine.on('trick', (evt: any) => {
+            this.showTrick(evt.trickName);
         });
 
         // Create distance counter UI
@@ -91,7 +102,34 @@ export class MyLevel extends Scene {
         this.restartLabel.graphics.visible = false;
         this.add(this.restartLabel);
 
-        console.log('Game initialized! Tap/click anywhere to jump or perform tricks in the air.');
+        // Create trick name label (hidden initially)
+        this.trickLabel = new Label({
+            text: 'TRICK!',
+            pos: vec(400, 200),
+            font: new Font({
+                family: 'Arial',
+                size: 36,
+                color: Color.Yellow,
+                textAlign: TextAlign.Center
+            })
+        });
+        this.trickLabel.z = 150;
+        this.trickLabel.graphics.visible = false;
+        this.add(this.trickLabel);
+
+        // Create instructions label (visible at start)
+        this.instructionsLabel = new Label({
+            text: 'TAP TO JUMP\nTap in air for tricks!',
+            pos: vec(400, 400),
+            font: new Font({
+                family: 'Arial',
+                size: 28,
+                color: Color.White,
+                textAlign: TextAlign.Center
+            })
+        });
+        this.instructionsLabel.z = 150;
+        this.add(this.instructionsLabel);
     }
 
     override onPreLoad(loader: DefaultLoader): void {
@@ -125,6 +163,28 @@ export class MyLevel extends Scene {
         const distance = Math.floor(Math.max(0, this.player.pos.x - 100)); // Subtract starting position
         this.distanceLabel.text = `Distance: ${distance}m`;
         this.distanceLabel.pos = vec(this.camera.pos.x - 350, 30); // Keep at top-left of screen
+
+        // Update trick label timer and position
+        if (this.trickLabelTimer > 0) {
+            const delta = elapsedMs / 1000;
+            this.trickLabelTimer -= delta;
+            if (this.trickLabelTimer <= 0) {
+                this.trickLabel.graphics.visible = false;
+            }
+            // Keep trick label centered on camera
+            this.trickLabel.pos = vec(this.camera.pos.x, 200);
+        }
+
+        // Update instructions timer and position
+        if (this.instructionsTimer > 0 && this.instructionsLabel.graphics.visible) {
+            const delta = elapsedMs / 1000;
+            this.instructionsTimer -= delta;
+            if (this.instructionsTimer <= 0) {
+                this.instructionsLabel.graphics.visible = false;
+            }
+            // Keep instructions centered on camera
+            this.instructionsLabel.pos = vec(this.camera.pos.x, 400);
+        }
     }
 
     private showGameOver(distance: number) {
@@ -144,14 +204,19 @@ export class MyLevel extends Scene {
         // Position labels at center of current camera view
         this.gameOverLabel.pos = vec(this.camera.pos.x, 250);
         this.restartLabel.pos = vec(this.camera.pos.x, 340);
-
-        console.log(`Game Over! Final distance: ${distance}m`);
     }
 
     private restartGame(engine: Engine) {
-        console.log('Restarting game...');
         // Simple and reliable: just reload the page
         window.location.reload();
+    }
+
+    private showTrick(trickName: string) {
+        // Display trick name for 0.8 seconds
+        this.trickLabel.text = trickName;
+        this.trickLabel.graphics.visible = true;
+        this.trickLabelTimer = 0.8; // 800ms
+        this.trickLabel.pos = vec(this.camera.pos.x, 200);
     }
 
     override onPostUpdate(engine: Engine, elapsedMs: number): void {

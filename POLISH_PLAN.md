@@ -13,17 +13,18 @@
 
 ### 1. Visual Improvements
 - [x] Add background color/gradient (sky blue?) - ✅ Sky blue background added
+- [x] Add visual feedback for tricks (scale pulse? rotation?) - ✅ Scale pulse animation
 - [ ] Add ground/floor beneath buildings (darker color)
 - [ ] Improve building visuals (add borders, shadows?)
-- [ ] Add visual feedback for tricks (scale pulse? rotation?)
 - [ ] Smooth color transitions instead of instant changes
 
 ### 2. Game Feel & Juice
 - [x] Add particle effects on landing (dust cloud) - ✅ Tan dust particles on landing
+- [x] Trick name display (e.g., "KICKFLIP!" appears briefly) - ✅ Shows OLLIE!, KICKFLIP!, HEELFLIP!
+- [x] Add visual feedback for tricks (scale pulse) - ✅ Player pulses to 1.3x size
 - [ ] Screen shake on landing (subtle)
 - [ ] Trail effect behind player when doing tricks?
 - [ ] Add "air time" visual indicator
-- [ ] Trick name display (e.g., "KICKFLIP!" appears briefly)
 
 ### 3. Physics Tuning
 - [ ] Test and adjust jump height (feels right?)
@@ -33,14 +34,14 @@
 
 ### 4. UI Elements
 - [x] Distance counter (how far you've traveled) - ✅ White distance counter in top-left
-- [ ] Trick counter/score display
-- [ ] Instructions on start ("TAP TO JUMP")
+- [x] Instructions on start ("TAP TO JUMP") - ✅ Shows for 5 seconds or until first tap
 - [x] Death zone handler (fall off screen = restart) - ✅ Auto-restart at y > 700
+- [ ] Trick counter/score display
 
 ### 5. Game Over & Restart
 - [x] Add death zone below screen (y > 700) - ✅ Implemented
-- [ ] Game over screen with distance traveled (currently just console logs and restarts)
-- [x] Restart button or tap to restart - ✅ Auto-restarts scene
+- [x] Game over screen with distance traveled - ✅ Shows "GAME OVER" with distance
+- [x] Restart button or tap to restart - ✅ Click to restart (page reload)
 - [ ] High score tracking (local storage?)
 
 ### 6. Performance & Bug Fixes
@@ -65,11 +66,11 @@
 3. ✅ Background color
 4. ✅ Landing particle effects
 
-**Medium Priority (Next):**
-5. Trick name display
-6. Visual trick feedback (scale/rotation)
-7. Instructions text
-8. Physics tuning
+**✅ Medium Priority (COMPLETED):**
+5. ✅ Trick name display (OLLIE!, KICKFLIP!, HEELFLIP!)
+6. ✅ Visual trick feedback (scale pulse animation)
+7. ✅ Instructions text ("TAP TO JUMP")
+8. ✅ Physics tuning (completed in previous session)
 
 **Low Priority (Nice to Have):**
 9. Screen shake

@@ -8,14 +8,15 @@ const game = new Engine({
   width: 800, // Logical width and height in game pixels
   height: 600,
   displayMode: DisplayMode.FitScreenAndFill, // Display mode tells excalibur how to fill the window
-  pixelArt: true, // pixelArt will turn on the correct settings to render pixel art without jaggies or shimmering artifacts
+  pixelArt: false, // Disabled to prevent pixel snapping jitter
+  antialiasing: true, // Smooth rendering
   scenes: {
     start: MyLevel
   },
   physics: {
     solver: SolverStrategy.Arcade, // Best for platformers - prevents overlap
     gravity: vec(0, 1200), // Strong downward pull for snappy jumps
-    substep: 3 // Prevents collision tunneling at high speeds
+    substep: 2 // Balance between performance and stability
   },
   fixedUpdateTimestep: 16 // 60fps consistent physics simulation
 });

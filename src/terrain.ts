@@ -63,18 +63,22 @@ export class TerrainManager {
       this.spawnBuilding();
     }
 
-    // Despawn buildings behind camera
-    this.buildings = this.buildings.filter(building => {
+    // Despawn buildings behind camera (optimized - no array creation)
+    let i = 0;
+    while (i < this.buildings.length) {
+      const building = this.buildings[i];
       const buildingRight = building.pos.x + building.width / 2;
 
       if (buildingRight < cameraX + this.DESPAWN_DISTANCE) {
         // Remove from scene and mark for despawn
         building.kill();
-        return false; // Remove from array
+        // Remove from array (splice is faster than filter for small arrays)
+        this.buildings.splice(i, 1);
+        // Don't increment i since we removed an element
+      } else {
+        i++;
       }
-
-      return true; // Keep in array
-    });
+    }
   }
 
   // Get count of active buildings (for debugging)

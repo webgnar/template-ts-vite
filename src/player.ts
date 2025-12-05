@@ -1,4 +1,4 @@
-import { Actor, Circle, Collider, CollisionContact, CollisionType, Color, EmitterType, Engine, GraphicsGroup, ParticleEmitter, Rectangle, Side, vec } from "excalibur";
+import { Actor, Circle, Collider, CollisionContact, CollisionType, Color, EasingFunctions, EmitterType, Engine, GraphicsGroup, ParticleEmitter, Rectangle, Side, vec } from "excalibur";
 
 // Player state machine enum
 enum PlayerState {
@@ -32,6 +32,7 @@ export class Player extends Actor {
 
   // Particle emitter for landing effects
   private landingEmitter!: ParticleEmitter;
+  private particleTimer: number = 0;
 
   constructor() {
     super({
@@ -129,13 +130,43 @@ export class Player extends Actor {
     if (this.airTrickCount < 3) {
       this.airTrickCount++;
       this.updateAnimation();
-      console.log(`Trick ${this.airTrickCount}!`);
+
+      // Emit trick event with trick name
+      const trickNames = ['OLLIE!', 'KICKFLIP!', 'HEELFLIP!'];
+      const trickName = trickNames[this.airTrickCount - 1];
+      this.scene?.engine.emit('trick', { trickName });
+
+      // Visual feedback - scale pulse
+      this.performTrickAnimation();
     }
+  }
+
+  private performTrickAnimation() {
+    // Clear any existing scale actions
+    this.actions.clearActions();
+
+    // Quick scale pulse: grow to 1.2x then back to 1.0x over 200ms
+    this.actions.scaleTo(vec(1.3, 1.3), vec(15, 15)) // Scale up fast
+      .scaleTo(vec(1.0, 1.0), vec(10, 10));          // Scale back down
   }
 
   private transitionTo(newState: PlayerState) {
     this.state = newState;
     this.stateTimer = 0;
+
+    // Set velocity once when entering state
+    switch (newState) {
+      case PlayerState.RUNNING:
+      case PlayerState.JUMPING:
+      case PlayerState.IN_AIR:
+      case PlayerState.LANDING:
+        this.vel.x = this.RUN_SPEED;
+        break;
+      case PlayerState.GRINDING:
+        this.vel.x = this.GRIND_SPEED;
+        break;
+    }
+
     this.updateAnimation();
   }
 
@@ -171,6 +202,14 @@ export class Player extends Actor {
   override onPreUpdate(engine: Engine, elapsedMs: number): void {
     const delta = elapsedMs / 1000; // Convert to seconds
     this.stateTimer += delta;
+
+    // Update particle timer
+    if (this.particleTimer > 0) {
+      this.particleTimer -= delta;
+      if (this.particleTimer <= 0) {
+        this.landingEmitter.isEmitting = false;
+      }
+    }
 
     // Check death zone (fell off screen)
     if (this.pos.y > 700 && !this.isGameOver) {
@@ -211,14 +250,10 @@ export class Player extends Actor {
   }
 
   private updateRunning(delta: number) {
-    // Constant forward velocity
-    this.vel.x = this.RUN_SPEED;
+    // Velocity set in transitionTo, physics handles movement
   }
 
   private updateJumping(delta: number) {
-    // Maintain forward momentum
-    this.vel.x = this.RUN_SPEED;
-
     // Transition to IN_AIR after 100ms
     if (this.stateTimer > 0.1) {
       this.transitionTo(PlayerState.IN_AIR);
@@ -226,19 +261,14 @@ export class Player extends Actor {
   }
 
   private updateInAir(delta: number) {
-    // Maintain forward momentum (gravity handles vertical)
-    this.vel.x = this.RUN_SPEED;
+    // Gravity handles vertical, velocity set in transitionTo
   }
 
   private updateGrinding(delta: number) {
-    // Slightly faster on rails
-    this.vel.x = this.GRIND_SPEED;
+    // Velocity set in transitionTo
   }
 
   private updateLanding(delta: number) {
-    // Maintain velocity
-    this.vel.x = this.RUN_SPEED;
-
     // Brief landing transition (50ms)
     if (this.stateTimer > 0.05) {
       this.transitionTo(PlayerState.RUNNING);
@@ -257,7 +287,6 @@ export class Player extends Actor {
       if (otherActor.hasTag('rail')) {
         this.transitionTo(PlayerState.GRINDING);
         this.airTrickCount = 0;
-        console.log('Grinding!');
         return;
       }
 
@@ -265,23 +294,20 @@ export class Player extends Actor {
       if (otherActor.hasTag('building')) {
         this.transitionTo(PlayerState.LANDING);
         this.airTrickCount = 0;
-        console.log('Landed!');
         return;
       }
     }
 
-    // Side collision = game over (for now just log)
+    // Side collision = game over
     if (side === Side.Left || side === Side.Right) {
-      console.log('Hit wall! Game Over!');
+      // Could trigger game over here
     }
   }
 
   private emitLandingParticles() {
     // Emit a burst of particles
     this.landingEmitter.isEmitting = true;
-    setTimeout(() => {
-      this.landingEmitter.isEmitting = false;
-    }, 100); // Emit for 100ms
+    this.particleTimer = 0.1; // 100ms in seconds
   }
 
   override onCollisionEnd(self: Collider, other: Collider, side: Side, lastContact: CollisionContact): void {
@@ -293,7 +319,6 @@ export class Player extends Actor {
         // Only transition to IN_AIR if we're actually falling
         if (Math.abs(this.vel.y) > 1) {
           this.transitionTo(PlayerState.IN_AIR);
-          console.log('In air!');
         }
       }
     }
